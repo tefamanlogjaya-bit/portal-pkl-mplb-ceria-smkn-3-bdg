@@ -99,6 +99,7 @@ dialog img{max-width:100%;max-height:70vh;border-radius:12px;display:block;margi
     </div>
     <div class="seg" id="seg"><button type="button" data-per="h" class="on">Harian</button><button type="button" data-per="w">Mingguan</button><button type="button" data-per="m">Bulanan</button></div>
     <div class="row"><input type="date" id="tgl" aria-label="Tanggal"><input type="month" id="bln" aria-label="Bulan" hidden></div>
+    <div class="row" id="wk-nav" style="margin-top:6px" hidden><button type="button" class="btn so sm" id="wk-prev">‹ Minggu Lalu</button><button type="button" class="btn so sm" id="wk-next">Minggu Depan ›</button></div>
     <div class="row" style="margin-top:6px">
       <button type="button" class="btn so sm" id="btn-sinkron">🔄 Muat Ulang</button>
       <button type="button" class="btn gr sm" id="btn-csv">📊 CSV</button>
@@ -106,10 +107,11 @@ dialog img{max-width:100%;max-height:70vh;border-radius:12px;display:block;margi
     </div>
     <details class="rc"><summary>⏰ Batas Waktu per Murid</summary>
       <label for="s-murid">MURID</label><select id="s-murid"></select>
-      <div class="row"><div><label for="s-jam">JAM MASUK (WIB)</label><input type="time" id="s-jam"></div><div><label for="s-tol">TOLERANSI (MENIT)</label><input type="number" id="s-tol" min="0" max="240"></div></div>
+      <div class="row"><div><label for="s-jam">ABSEN DIBUKA / JAM MASUK (WIB)</label><input type="time" id="s-jam"></div><div><label for="s-tol">TOLERANSI (MENIT)</label><input type="number" id="s-tol" min="0" max="240"></div></div>
+      <label for="s-batas">BATAS ABSEN MASUK (MENIT SETELAH DIBUKA)</label><input type="number" id="s-batas" min="1" max="720"><p id="s-tutup" class="hint" style="text-align:left;font-weight:700;color:var(--p)"></p>
       <label for="s-pulang">JAM PULANG TEPAT WAKTU (WIB)</label><input type="time" id="s-pulang">
       <button type="button" class="btn or sm" id="btn-set" style="width:100%;margin-top:8px">Simpan Pengaturan</button>
-      <p class="hint">Pilih "Semua binaan" untuk menerapkan ke semua murid sekaligus. Terlambat = masuk setelah jam masuk + toleransi; pulang cepat = sebelum jam pulang; pulang terlambat = lewat jam pulang + toleransi. Berlaku juga untuk data lama.</p>
+      <p class="hint">Pilih "Semua binaan" untuk menerapkan ke semua murid sekaligus. Terlambat = masuk setelah jam masuk + toleransi; pulang cepat = sebelum jam pulang; pulang terlambat = lewat jam pulang + toleransi. Berlaku juga untuk data lama. Batas absen masuk: lewat dari batas ini murid tidak bisa lagi absen "Masuk Kerja" dan otomatis berstatus <b>Alpa</b> (kecuali sudah Izin/Sakit) (default 60 menit = 1 jam setelah absen dibuka).</p>
     </details>
     <div id="chips" class="chips" hidden></div>
     <div id="loading" class="loader" hidden>Menganalisis absensi siswa… ⏳</div>
@@ -145,6 +147,14 @@ dialog img{max-width:100%;max-height:70vh;border-radius:12px;display:block;margi
     <div id="i-prev"></div>
     <button type="button" class="btn gr" id="btn-simpan-imp" hidden>💾 Simpan ke Database</button>
     <div class="sec">3. Daftar Siswa &amp; Pembimbingnya</div>
+    <details class="rc" open><summary>➕ Tambah Murid Satu per Satu</summary>
+      <label for="m-nisn">NISN</label><input id="m-nisn" type="text" inputmode="numeric" autocomplete="off" placeholder="Contoh: 0081234567">
+      <label for="m-nama">NAMA LENGKAP</label><input id="m-nama" type="text" autocomplete="off" placeholder="Nama murid">
+      <label for="m-kelas">KELAS</label><select id="m-kelas"></select>
+      <label for="m-inst">INSTANSI / TEMPAT PKL</label><input id="m-inst" type="text" autocomplete="off" placeholder="Nama perusahaan / instansi">
+      <label for="m-pb">GURU PEMBIMBING</label><select id="m-pb"></select>
+      <button type="button" class="btn or sm" id="btn-murid" style="width:100%;margin-top:10px">Simpan Murid</button>
+    </details>
     <input id="s-cari" type="search" placeholder="Cari nama / NISN…"><div id="s-info" class="hint"></div>
     <button type="button" class="btn rd sm" id="btn-hapus-pilih" style="width:100%;margin:6px 0">🗑️ Hapus Terpilih</button>
     <div class="tbl"><table><thead><tr><th><input type="checkbox" id="s-all" aria-label="Pilih semua" style="min-width:0;width:auto"></th><th>Siswa</th><th>Kelas</th><th>Pembimbing</th><th></th></tr></thead><tbody id="s-list"></tbody></table></div>
@@ -230,6 +240,7 @@ const now = () => new Date(Date.now() + offset);
 const tglISO = d => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(d);
 const jam = d => new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(d);
 const fmtTgl = iso => iso.split('-').reverse().join('/');
+const fmtPanjang = iso => new Intl.DateTimeFormat('id-ID', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(iso + 'T00:00:00Z'));
 const akhirPekan = iso => [0, 6].includes(new Date(iso + 'T00:00:00Z').getUTCDay());
 
 /* ---------- utilitas ---------- */
@@ -285,14 +296,18 @@ function rentang(per, v) {
   const a = addHari(v, -((new Date(v + 'T00:00:00Z').getUTCDay() + 6) % 7)); return [a, addHari(a, 6)];
 }
 const pilih = (...v) => v.find(x => x != null && x !== '');
-const stS = s => { s = s || {}; const p = S.pemb[s.pembimbing] || {}, t = pilih(s.toleransi, p.toleransi, 15); return { jam: pilih(s.jamMasuk, p.jamMasuk, '07:00'), tol: +t >= 0 ? +t : 15, pulang: pilih(s.jamPulang, p.jamPulang, '16:00') }; };
+const stS = s => { s = s || {}; const p = S.pemb[s.pembimbing] || {}, t = pilih(s.toleransi, p.toleransi, 15); const bs = pilih(s.batasAbsen, p.batasAbsen, 60); return { jam: pilih(s.jamMasuk, p.jamMasuk, '07:00'), tol: +t >= 0 ? +t : 15, bts: +bs >= 1 ? +bs : 60, pulang: pilih(s.jamPulang, p.jamPulang, '16:00') }; };
 const jamMnt = x => { const [h, m] = x.split(':').map(Number); return h * 60 + m; };
 const batas = q => jamMnt(q.jam) + q.tol;
+const tutup = q => jamMnt(q.jam) + q.bts;
+const jamStr = m => { m = ((m % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
+const hTutup = () => { const j = $('s-jam').value, b = Math.round(+$('s-batas').value); $('s-tutup').textContent = /^\d\d:\d\d$/.test(j) && b >= 1 ? `🔒 Absen masuk ditutup pukul ${jamStr(jamMnt(j) + b)} WIB` : ''; };
 const chip = (n, t) => `<div class="chip"><b>${n}</b>${t}</div>`;
-let unsub = null; const stopLive = () => { if (unsub) { unsub(); unsub = null; } };
+let unsub = null; const stopLive = () => { if (unsub) { unsub(); unsub = null; } S.rl = null; }; let tick = 0;
 setInterval(() => {
   const d = now(), t = '🕒 ' + jam(d) + ' WIB • ' + hariTgl(d);
   document.querySelectorAll('.clock').forEach(e => e.textContent = t);
+  if (unsub && S.rl && ++tick % 30 === 0) S.rl();
   if (unsub && S.liveTgl !== tglISO(d) && $('tgl').value === S.liveTgl) { $('tgl').value = tglISO(d); muatRekap(); }
 }, 1000);
 
@@ -317,13 +332,16 @@ async function isiSetelan() {
   sel.innerHTML = '<option value="">👥 Semua binaan</option>' + Object.entries(sis).sort((a, b) => a[1].nama.localeCompare(b[1].nama)).map(([n, x]) => `<option value="${esc(n)}">${esc(x.nama)}</option>`).join('');
   sel.value = sis[cur] ? cur : ''; tampilSetelan();
 }
-function tampilSetelan() { const sis = S.cache[S.viewId] || {}, x = sis[$('s-murid').value] || Object.values(sis)[0] || {}, q = stS(x); $('s-jam').value = q.jam; $('s-tol').value = q.tol; $('s-pulang').value = q.pulang; }
+function tampilSetelan() { const sis = S.cache[S.viewId] || {}, x = sis[$('s-murid').value] || Object.values(sis)[0] || {}, q = stS(x); $('s-jam').value = q.jam; $('s-tol').value = q.tol; $('s-pulang').value = q.pulang; $('s-batas').value = q.bts; hTutup(); }
 async function simpanSetelan() {
   const j = $('s-jam').value, t = Math.round(+$('s-tol').value), pl = $('s-pulang').value, sis = S.cache[S.viewId] || {}, n = $('s-murid').value, tg = n ? [n] : Object.keys(sis);
   if (!/^\d\d:\d\d$/.test(j) || !/^\d\d:\d\d$/.test(pl) || !(t >= 0 && t <= 240)) return toast('Isi jam masuk, toleransi (0–240 menit), dan jam pulang.', 'err');
+  const bt = Math.round(+$('s-batas').value);
+  if (!(bt >= 1 && bt <= 720)) return toast('Batas absen masuk harus 1–720 menit setelah dibuka.', 'err');
+  if (bt < t) return toast('Batas absen tidak boleh lebih kecil dari toleransi terlambat.', 'err');
   if (!tg.length) return toast('Belum ada murid binaan.', 'err');
-  const up = {}; tg.forEach(x => { up[`siswa/${x}/jamMasuk`] = j; up[`siswa/${x}/toleransi`] = t; up[`siswa/${x}/jamPulang`] = pl; });
-  try { await update(ref(db), up); tg.forEach(x => Object.assign(sis[x], { jamMasuk: j, toleransi: t, jamPulang: pl })); toast(`Pengaturan tersimpan untuk ${tg.length} murid.`, 'ok'); muatRekap(); }
+  const up = {}; tg.forEach(x => { up[`siswa/${x}/jamMasuk`] = j; up[`siswa/${x}/toleransi`] = t; up[`siswa/${x}/jamPulang`] = pl; up[`siswa/${x}/batasAbsen`] = bt; });
+  try { await update(ref(db), up); tg.forEach(x => Object.assign(sis[x], { jamMasuk: j, toleransi: t, jamPulang: pl, batasAbsen: bt })); toast(`Pengaturan tersimpan untuk ${tg.length} murid.`, 'ok'); muatRekap(); }
   catch (e) { toast(pesanError(e), 'err'); }
 }
 
@@ -361,12 +379,23 @@ function hitung({ sis, rows, libur, lnama }, a, b) {
       if (h.pulang) { const mp = menitWIB(h.pulang), jp = jamMnt(q.pulang); h.pk = mp < jp ? 'cepat' : mp <= jp + q.tol ? 'tepat' : 'telat'; if (h.pk === 'cepat') { h.cepat = true; p.cepat++; } else if (h.pk === 'tepat') p.ptepat++; else p.ptelat++; }
       if (h.masuk) { h.tel = menitWIB(h.masuk) > batas(q); h.tel ? p.telat++ : p.tepat++; }
       else if (h.st === 'Izin') p.izin++; else if (h.st === 'Sakit') p.sakit++;
-      else if (kerja && t < hari) { p.alpa++; h.st = 'Alpa'; }
+      else if (kerja && (t < hari || (t === hari && menitWIB(now().getTime()) > tutup(q)))) { p.alpa++; h.st = 'Alpa'; }
       else if (!kerja && t <= hari && !h.pulang) { h.libur = true; h.lk = lnama[t] || (akhirPekan(t) ? 'Akhir Pekan' : 'Libur'); p.libur++; }
       if (Object.keys(h).length) p.hari[t] = h; });
   }
   return per;
 }
+function mingguBulan(a, b) {
+  const W = []; let s = a;
+  while (s <= b) { const e0 = addHari(s, 6 - ((new Date(s + 'T00:00:00Z').getUTCDay() + 6) % 7)), e = e0 > b ? b : e0; W.push([s, e]); s = addHari(e, 1); }
+  return W;
+}
+function rekapMinggu(d, a, b) {
+  return mingguBulan(a, b).map(([x, y], i) => { const per = Object.values(hitung(d, x, y)), sum = k => per.reduce((s, p) => s + p[k], 0);
+    return { no: i + 1, a: x, b: y, tepat: sum('tepat'), telat: sum('telat'), izin: sum('izin'), sakit: sum('sakit'), alpa: sum('alpa') }; });
+}
+const tabelMinggu = (W, judul) => judul + '<div class="tbl"><table><thead><tr><th>Minggu</th><th>Periode (Tanggal)</th><th>Datang Tepat</th><th>Datang Telat</th><th>Izin</th><th>Sakit</th><th>Alpa</th></tr></thead><tbody>' +
+  W.map(w => `<tr><td>Ke-${w.no}</td><td class="l">${fmtTgl(w.a)} s/d ${fmtTgl(w.b)}</td><td>${w.tepat}</td><td>${w.telat}</td><td>${w.izin}</td><td>${w.sakit}</td><td>${w.alpa}</td></tr>`).join('') + '</tbody></table></div>';
 async function muatRekap() {
   stopLive(); if (!S.viewId) return;
   const v = S.per === 'm' ? $('bln').value : $('tgl').value; if (!v) return;
@@ -375,9 +404,9 @@ async function muatRekap() {
     const sis = await binaanDari(S.viewId);
     if (S.per === 'h') {
       const libur = akhirPekan(a) || (await get(ref(db, 'libur/' + a))).exists();
-      if (a === tglISO(now())) { S.liveTgl = a; unsub = onValue(ref(db, 'absensi/' + a), s => renderHarian(sis, s, a, libur), e => toast(pesanError(e), 'err')); }
+      if (a === tglISO(now())) { S.liveTgl = a; unsub = onValue(ref(db, 'absensi/' + a), s => { S.rl = () => renderHarian(sis, s, a, libur); S.rl(); }, e => toast(pesanError(e), 'err')); }
       else renderHarian(sis, await get(ref(db, 'absensi/' + a)), a, libur);
-    } else { S.last = hitung(await dataRentang(a, b), a, b); renderRentang(S.last, a, b); }
+    } else { const d = await dataRentang(a, b); S.last = hitung(d, a, b); S.mg = S.per === 'm' ? rekapMinggu(d, a, b) : null; renderRentang(S.last, a, b); }
   } catch (e) { toast(pesanError(e), 'err'); } finally { $('loading').hidden = true; }
 }
 function renderHarian(sis, snap, tgl, libur) {
@@ -389,16 +418,21 @@ function renderHarian(sis, snap, tgl, libur) {
     if (i.status === 'Pulang Kerja') { const q = stS(sis[i.nisn]), m = menitWIB(i.ts) - jamMnt(q.pulang), c = m < 0 ? ['#fee2e2', '#991b1b', `Pulang cepat ${-m} mnt`] : m <= q.tol ? ['#dcfce7', '#14532d', 'Pulang tepat waktu'] : ['#fee2e2', '#991b1b', `Pulang terlambat ${m} mnt`]; i.tag = ` <span class="tag" style="background:${c[0]};color:${c[1]}">${c[2]}</span>`; }
     g[i.status] && g[i.status].push(i); });
   const sudah = new Set(data.map(d => d.nisn)), telat = g['Masuk Kerja'].filter(i => menitWIB(i.ts) > bt(i)).length;
-  const belum = libur ? [] : Object.entries(sis).filter(([n]) => !sudah.has(n)).map(([n, s]) => ({ nisn: n, ...s })), lampau = tgl < tglISO(now());
+  const kosong = libur ? [] : Object.entries(sis).filter(([n]) => !sudah.has(n)).map(([n, s]) => ({ nisn: n, ...s })), lampau = tgl < tglISO(now()), hariIni = tgl === tglISO(now());
+  const alpa = kosong.filter(s => lampau || (hariIni && menitWIB(now().getTime()) > tutup(stS(s)))), belum = kosong.filter(s => !alpa.includes(s)), sc = $('rekap').scrollTop;
   $('chips').hidden = false;
-  $('chips').innerHTML = chip(Object.keys(sis).length, 'Binaan') + chip(g['Masuk Kerja'].length, 'Hadir') + chip(telat, 'Telat') + chip(g['Izin'].length + g['Sakit'].length, 'Izin/Sakit') + chip(belum.length, lampau ? 'Alpa' : 'Belum');
+  $('chips').innerHTML = chip(Object.keys(sis).length, 'Binaan') + chip(g['Masuk Kerja'].length, 'Hadir') + chip(telat, 'Telat') + chip(g['Izin'].length + g['Sakit'].length, 'Izin/Sakit') + chip(alpa.length, 'Alpa') + (belum.length ? chip(belum.length, 'Belum') : '');
   let h = '';
   if (libur) h += '<div class="box info">🏖️ Hari libur / akhir pekan. Tidak ada tagihan absen.</div>';
-  else if (belum.length) h += `<div class="grp"><div class="gh belum"><span>${lampau ? '⚫ Tidak Absen (Alpa)' : '⚠️ Belum Absen'}</span><span class="pill">${belum.length}</span></div>` +
-    belum.map(s => `<div class="it"><b>${esc(s.nama)}</b> <span class="tag">${esc(s.kelas)}</span><br>🏢 ${esc(s.instansi)}</div>`).join('') + '</div>';
-  else if (Object.keys(sis).length) h += '<div class="box ok" style="text-align:center">🎉 Semua siswa binaan sudah absen.</div>';
+  else {
+    const grup = (judul, arr, css, ket) => arr.length ? `<div class="grp"><div class="gh ${css}"><span>${judul}</span><span class="pill">${arr.length}</span></div>` +
+      arr.map(s => `<div class="it"><b>${esc(s.nama)}</b> <span class="tag">${esc(s.kelas)}</span><br>🏢 ${esc(s.instansi)}${ket(s)}</div>`).join('') + '</div>' : '';
+    h += grup('⚫ Alpa (Tidak Absen)', alpa, 'alpa', s => hariIni ? `<br>🔒 Absen ditutup ${jamStr(tutup(stS(s)))} WIB` : '') +
+      grup('⚠️ Belum Absen', belum, 'belum', s => `<br>🔒 Batas absen ${jamStr(tutup(stS(s)))} WIB`);
+    if (!alpa.length && !belum.length && Object.keys(sis).length) h += '<div class="box ok" style="text-align:center">🎉 Semua siswa binaan sudah absen.</div>';
+  }
   h += GRUP.map(x => kartu(x[0], g[x[0]], x[1])).join('');
-  $('rekap').innerHTML = h || '<p class="hint">Belum ada siswa binaan.</p>';
+  $('rekap').innerHTML = h || '<p class="hint">Belum ada siswa binaan.</p>'; $('rekap').scrollTop = sc;
 }
 function ketDatang(h, q) {
   if (h.masuk) { const m = menitWIB(h.masuk) - batas(q); return m > 0 ? `Datang Terlambat (${m} mnt)` : 'Datang Tepat Waktu'; }
@@ -414,7 +448,8 @@ function renderRentang(per, a, b) {
   const L = Object.values(per).sort((x, y) => x.nama.localeCompare(y.nama)), sum = k => L.reduce((s, p) => s + p[k], 0);
   $('chips').hidden = false;
   $('chips').innerHTML = chip(L.length, 'Binaan') + chip(sum('tepat'), 'Datang Tepat') + chip(sum('telat'), 'Datang Telat') + chip(sum('izin') + sum('sakit'), 'Izin/Sakit') + chip(sum('alpa'), 'Alpa');
-  $('rekap').innerHTML = `<div class="sub" style="margin:8px 0">${fmtTgl(a)} – ${fmtTgl(b)}</div><div class="tbl"><table><thead><tr><th>Nama</th><th>Datang Tepat</th><th>Datang Telat</th><th>Pulang Tepat</th><th>Pulang Telat</th><th>Pulang Cepat</th><th>Izin</th><th>Sakit</th><th>Alpa</th><th>Libur</th></tr></thead><tbody>` +
+  const hi = tglISO(now());
+  $('rekap').innerHTML = `<div class="box info" style="text-align:left;margin:8px 0">📅 <b>Rekap ${S.per === 'w' ? 'Mingguan' : 'Bulanan'}</b>${hi >= a && hi <= b ? ' <span class="tag">periode berjalan</span>' : ''}<br>Periode: <b>${fmtPanjang(a)}</b> s/d <b>${fmtPanjang(b)}</b></div>${S.mg ? tabelMinggu(S.mg, '<div class="sec">Rekap Mingguan</div>') : ''}<div class="sec">Rekap per Siswa</div><div class="tbl"><table><thead><tr><th>Nama</th><th>Datang Tepat</th><th>Datang Telat</th><th>Pulang Tepat</th><th>Pulang Telat</th><th>Pulang Cepat</th><th>Izin</th><th>Sakit</th><th>Alpa</th><th>Libur</th></tr></thead><tbody>` +
     L.map(p => `<tr data-n="${esc(p.nisn)}"><td class="l">${esc(p.nama)}</td><td>${p.tepat}</td><td>${p.telat}</td><td>${p.ptepat}</td><td>${p.ptelat}</td><td>${p.cepat}</td><td>${p.izin}</td><td>${p.sakit}</td><td>${p.alpa}</td><td>${p.libur}</td></tr>`).join('') +
     '</tbody></table></div><p class="hint">Ketuk nama siswa untuk melihat keterangan per hari.</p>';
 }
@@ -435,24 +470,26 @@ async function unduh(jenis) {
     L.forEach(p => { const q = stS(d.sis[p.nisn]); Object.keys(p.hari).sort().forEach(t => { const h = p.hari[t];
       baris.push([fmtTgl(t), p.nisn, p.nama, p.kelas, ketDatang(h, q), h.masuk ? jam(new Date(h.masuk)) : '-', ketPulang(h, q) || '-', h.pulang ? jam(new Date(h.pulang)) : '-']); }); });
     if (!baris.length) throw new Error('Tidak ada data pada periode ini.');
-    const nama = S.pemb[S.viewId].nama;
+    const nama = S.pemb[S.viewId].nama, W = S.per === 'm' ? rekapMinggu(d, a, b) : null;
     if (jenis === 'csv') {
       const q = v => { v = String(v); if (/^([=+@]|-(?!\d))/.test(v)) v = "'" + v; return '"' + v.replace(/"/g, '""') + '"'; };
-      const csv = '\uFEFF' + [['TANGGAL', 'NISN', 'NAMA', 'KELAS', 'KETERANGAN DATANG', 'JAM MASUK', 'KETERANGAN PULANG', 'JAM PULANG'], ...baris].map(x => x.map(q).join(',')).join('\r\n');
+      const kop = [['LAPORAN KEHADIRAN PKL - SMKN 3 BANDUNG'], ['Pembimbing', nama], ['Periode', `${fmtPanjang(a)} s/d ${fmtPanjang(b)}`], []];
+      const mg = W ? [[], ['REKAP MINGGUAN'], ['MINGGU', 'PERIODE', 'DATANG TEPAT', 'DATANG TELAT', 'IZIN', 'SAKIT', 'ALPA'], ...W.map(w => ['Ke-' + w.no, `${fmtTgl(w.a)} s/d ${fmtTgl(w.b)}`, w.tepat, w.telat, w.izin, w.sakit, w.alpa])] : [];
+      const csv = '\uFEFF' + [...kop, ['TANGGAL', 'NISN', 'NAMA', 'KELAS', 'KETERANGAN DATANG', 'JAM MASUK', 'KETERANGAN PULANG', 'JAM PULANG'], ...baris, ...mg].map(x => x.map(q).join(',')).join('\r\n');
       simpanFile(new Blob([csv], { type: 'text/csv;charset=utf-8;' }), `Laporan_PKL_${nama.replace(/[^\w]+/g, '_')}_${a}_${b}.csv`);
-    } else cetak(L, baris, a === b ? fmtTgl(a) : `${fmtTgl(a)} – ${fmtTgl(b)}`, nama);
+    } else cetak(L, baris, a === b ? fmtPanjang(a) : `${fmtPanjang(a)} s/d ${fmtPanjang(b)}`, nama, W, a, b);
   } catch (e) { toast(pesanError(e), 'err'); } finally { sibuk(btn, false); }
 }
-function cetak(L, baris, periode, nama) {
+function cetak(L, baris, periode, nama, W, a, b) {
   const ring = L.map((p, i) => `<tr><td>${i + 1}</td><td class="l">${esc(p.nama)}</td><td>${esc(p.nisn)}</td><td>${p.tepat}</td><td>${p.telat}</td><td>${p.ptepat}</td><td>${p.ptelat}</td><td>${p.cepat}</td><td>${p.izin}</td><td>${p.sakit}</td><td>${p.alpa}</td><td>${p.libur}</td></tr>`).join('');
   const rinci = baris.map((r, i) => `<tr><td>${i + 1}</td><td>${r[0]}</td><td class="l">${esc(r[2])}</td><td class="l">${esc(r[4])}</td><td>${r[5]}</td><td class="l">${esc(r[6])}</td><td>${r[7]}</td></tr>`).join('');
   $('cetak').innerHTML = `<div class="hd"><div style="font-size:20px;font-weight:bold">PORTAL PKL MPLB CERIA</div><div style="font-size:14px;font-weight:bold;color:#4b5563">SMKN 3 BANDUNG</div><div style="font-size:12px;font-weight:bold">LAPORAN KEHADIRAN PKL</div></div>
     <div>Pembimbing: <b>${esc(nama)}</b><br>Periode: <b>${esc(periode)}</b><br>Batas datang dan jam pulang diatur per murid<br>Tanggal Cetak: ${fmtTgl(tglISO(now()))}</div>
     <h3>Ringkasan per Siswa</h3><table><thead><tr><th>No</th><th>Nama</th><th>NISN</th><th>Datang Tepat</th><th>Datang Telat</th><th>Pulang Tepat</th><th>Pulang Telat</th><th>Pulang Cepat</th><th>Izin</th><th>Sakit</th><th>Alpa</th><th>Libur</th></tr></thead><tbody>${ring}</tbody></table>
-    <h3>Keterangan per Hari</h3><table><thead><tr><th>No</th><th>Tanggal</th><th>Nama</th><th>Keterangan Datang</th><th>Masuk</th><th>Keterangan Pulang</th><th>Pulang</th></tr></thead><tbody>${rinci}</tbody></table>
+    ${W ? tabelMinggu(W, '<h3>Rekap Mingguan (per Periode Tanggal)</h3>') : ''}<h3>Keterangan per Hari</h3><table><thead><tr><th>No</th><th>Tanggal</th><th>Nama</th><th>Keterangan Datang</th><th>Masuk</th><th>Keterangan Pulang</th><th>Pulang</th></tr></thead><tbody>${rinci}</tbody></table>
     <div style="margin-top:36px;text-align:right;padding-right:30px">Mengetahui &amp; Memeriksa,<br><br><br><br><b><u>${esc(nama)}</u></b><br>Guru Pembimbing PKL</div>
     <div style="margin-top:30px;border-top:1px solid #e2e8f0;padding-top:8px;text-align:center;font-size:9px;color:#64748b">&copy; 2026 Pusat Komando KKA Lab Manajemen Logistik &bull; SMKN 3 Bandung &bull; By Yunan Nuryaman</div>`;
-  const t = document.title; document.title = `Laporan_PKL_${nama.replace(/[^\w]+/g, '_')}_${periode.replace(/[^\d]+/g, '')}`;
+  const t = document.title; document.title = `Laporan_PKL_${nama.replace(/[^\w]+/g, '_')}_${a}_${b}`;
   setTimeout(() => { window.print(); document.title = t; }, 100);
 }
 
@@ -479,7 +516,7 @@ async function bukaAdmin() {
   renderPemb(); renderSiswa(); muatLibur(); show('admin');
 }
 function renderPemb() {
-  $('i-pb').innerHTML = optPb($('i-pb').value, '— pilih pembimbing —');
+  $('i-pb').innerHTML = optPb($('i-pb').value, '— pilih pembimbing —'); $('m-pb').innerHTML = optPb($('m-pb').value, '— pilih pembimbing —');
   $('p-list').innerHTML = pbIds().map(i => `<div class="lib"><span>${esc(S.pemb[i].nama)} · ${Object.values(S.dsiswa).filter(s => s.pembimbing === i).length} siswa</span><button type="button" data-hapus-pb="${esc(i)}">Hapus</button></div>`).join('') || '<p class="hint">Belum ada pembimbing.</p>';
 }
 async function tambahGuru() {
@@ -488,6 +525,21 @@ async function tambahGuru() {
   if (S.pemb[id]) return toast('Pembimbing sudah ada.', 'err');
   try { const o = { nama }; await set(ref(db, 'pembimbing/' + id), o); S.pemb[id] = o; S.pembSiap = false;
     $('g-nama').value = ''; renderPemb(); toast('Pembimbing ditambahkan.', 'ok'); } catch (e) { toast(pesanError(e), 'err'); }
+}
+async function tambahMurid() {
+  const n = $('m-nisn').value.trim(), nama = $('m-nama').value.trim().replace(/\s+/g, ' '), kelas = $('m-kelas').value, ins = $('m-inst').value.trim(), pb = $('m-pb').value;
+  if (!/^[0-9A-Za-z]{3,20}$/.test(n)) return toast('NISN harus 3–20 karakter (huruf/angka).', 'err');
+  if (nama.length < 3) return toast('Nama minimal 3 huruf.', 'err');
+  if (!kelas) return toast('Pilih kelas dulu.', 'err');
+  if (!pb) return toast('Pilih guru pembimbing dulu.', 'err');
+  if (S.dsiswa[n]) return toast(`NISN ${n} sudah terdaftar atas nama ${S.dsiswa[n].nama}.`, 'err');
+  const b = $('btn-murid'); sibuk(b, true);
+  try {
+    if ((await get(ref(db, 'siswa/' + n))).exists()) throw new Error(`NISN ${n} sudah terdaftar.`);
+    const o = { nama, kelas, instansi: ins, pembimbing: pb }; await set(ref(db, 'siswa/' + n), o);
+    S.dsiswa[n] = o; S.cache = {}; ['m-nisn', 'm-nama', 'm-inst'].forEach(i => $(i).value = ''); $('m-nisn').focus();
+    renderPemb(); renderSiswa(); toast(`Murid ${nama} berhasil ditambahkan.`, 'ok');
+  } catch (e) { toast(pesanError(e), 'err'); } finally { sibuk(b, false); }
 }
 function renderSiswa() {
   const q = $('s-cari').value.toLowerCase(), L = Object.entries(S.dsiswa).filter(([n, s]) => (n + ' ' + s.nama).toLowerCase().includes(q)).sort((a, b) => a[1].nama.localeCompare(b[1].nama));
@@ -590,8 +642,8 @@ async function cari() {
     await muatGuru();
     const v = (await get(ref(db, 'siswa/' + nisn))).val();
     if (!v) throw new Error(`Data siswa dengan NISN ${nisn} tidak ditemukan!`);
-    S.siswa = { nisn, ...v };
-    info(`✅ <b>Verifikasi berhasil</b><br>👤 ${esc(v.nama)} (${esc(v.kelas)})<br>🏢 ${esc(v.instansi)}<br>⏰ Batas datang ${stS(v).jam} WIB (+${stS(v).tol} mnt) • Jam pulang ${stS(v).pulang}`, 'ok');
+    S.siswa = { nisn, ...v }; const lewat = !akhirPekan(tglISO(now())) && menitWIB(now().getTime()) > tutup(stS(v));
+    info(`✅ <b>Verifikasi berhasil</b><br>👤 ${esc(v.nama)} (${esc(v.kelas)})<br>🏢 ${esc(v.instansi)}<br>⏰ Absen dibuka ${stS(v).jam} WIB (terlambat lewat +${stS(v).tol} mnt)<br>🔒 Absen masuk ditutup ${jamStr(tutup(stS(v)))} WIB (lewat = Alpa) • Jam pulang ${stS(v).pulang}` + (lewat ? '<br><b>⚫ Batas absen masuk sudah lewat, status hari ini Alpa. Harap untuk menghubungi guru pembimbing.</b>' : ''), lewat ? 'err' : 'ok');
   } catch (e) { info('❌ ' + esc(pesanError(e)), 'err'); }
   siap();
 }
@@ -662,6 +714,7 @@ async function kirim() {
   $('kirim').disabled = true; $('loader').hidden = false;
   const s = S.siswa, status = $('status').value, d = now(), tgl = tglISO(d), key = `${s.nisn}_${KODE[status]}`, rr = ref(db, `absensi/${tgl}/${key}`);
   try {
+    if (status === 'Masuk Kerja' && menitWIB(d.getTime()) > tutup(stS(s))) { const m = `Absen masuk sudah ditutup pukul ${jamStr(tutup(stS(s)))} WIB, status hari ini Alpa. Harap untuk menghubungi guru pembimbing.`; info('⚫ ' + esc(m), 'err'); throw new Error(m); }
     try {
       await set(rr, { nisn: s.nisn, nama: s.nama, kelas: s.kelas, instansi: s.instansi, pembimbing: s.pembimbing, status, gps: S.gps, ts: serverTimestamp() });
     } catch (e) { throw new Error(`${s.nama} sudah tercatat "${status}" hari ini, atau data tidak valid.`); }
@@ -682,7 +735,7 @@ document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', 
 $('btn-masuk').onclick = masuk; $('btn-keluar').onclick = keluar; $('btn-sinkron').onclick = () => { S.cache = {}; muatRekap(); };
 $('btn-csv').onclick = () => unduh('csv'); $('btn-pdf').onclick = () => unduh('pdf'); $('btn-set').onclick = simpanSetelan; $('s-murid').onchange = tampilSetelan;
 $('seg').addEventListener('click', e => { const b = e.target.closest('[data-per]'); if (!b) return; S.per = b.dataset.per;
-  [...$('seg').children].forEach(x => x.classList.toggle('on', x === b)); $('tgl').hidden = S.per === 'm'; $('bln').hidden = S.per !== 'm'; muatRekap(); });
+  [...$('seg').children].forEach(x => x.classList.toggle('on', x === b)); $('tgl').hidden = S.per === 'm'; $('bln').hidden = S.per !== 'm'; $('wk-nav').hidden = S.per !== 'w'; muatRekap(); });
 $('tgl').onchange = $('bln').onchange = muatRekap;
 $('rekap').addEventListener('click', e => { const a = e.target.closest('[data-foto]'); if (a) { e.preventDefault(); lihatFoto(a.dataset.foto, a.dataset.k); return; } const r = e.target.closest('tr[data-n]'); if (r) detail(r.dataset.n); });
 $('dlg-x').onclick = () => $('dlg').close(); $('dlg2-x').onclick = () => $('dlg2').close();
@@ -724,8 +777,12 @@ $('l-list').addEventListener('click', async e => { const t = e.target.dataset.de
 $('btn-cari').onclick = cari; $('btn-gps').onclick = initGPS; $('kirim').onclick = kirim;
 $('btn-galeri').onclick = () => $('qr-galeri').click(); $('btn-kamera').onclick = () => $('qr-kamera').click();
 ['qr-galeri', 'qr-kamera'].forEach(id => $(id).addEventListener('change', e => { pindai(e.target.files[0]); e.target.value = ''; }));
-$('btn-scan').onclick = scanLive; $('btn-cam').onclick = bukaKamera; $('btn-snap').onclick = ambilFoto; $('i-kelas').innerHTML = optK('', '— tanpa default —');
+$('btn-scan').onclick = scanLive; $('btn-cam').onclick = bukaKamera; $('btn-snap').onclick = ambilFoto; $('i-kelas').innerHTML = optK('', '— tanpa default —'); $('m-kelas').innerHTML = optK('', '— pilih kelas —');
 $('nisn').addEventListener('keydown', e => { if (e.key === 'Enter') cari(); });
+const geserMinggu = n => { const v = $('tgl').value || tglISO(now()); $('tgl').value = addHari(rentang('w', v)[0], n * 7); muatRekap(); };
+$('wk-prev').onclick = () => geserMinggu(-1); $('wk-next').onclick = () => geserMinggu(1);
+$('btn-murid').onclick = tambahMurid; $('s-jam').addEventListener('input', hTutup); $('s-batas').addEventListener('input', hTutup);
+['m-nisn', 'm-nama', 'm-inst'].forEach(id => $(id).addEventListener('keydown', e => { if (e.key === 'Enter') tambahMurid(); }));
 siap();
 const MODE = new URLSearchParams(location.search).get('mode');
 if (MODE === 'siswa') show('siswa'); else if (MODE === 'guru') show('login'); else if (MODE === 'admin') show('alogin');
