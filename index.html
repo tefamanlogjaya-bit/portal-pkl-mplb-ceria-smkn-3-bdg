@@ -58,6 +58,7 @@ dialog{border:0;border-radius:20px;padding:14px;max-width:92vw;box-shadow:0 20px
 dialog img{max-width:100%;max-height:70vh;border-radius:12px;display:block;margin:0 auto}
 .lib{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;margin-top:8px;background:#fff7ed;border:1px solid var(--line);border-radius:12px;font-size:12px;font-weight:700}
 .lib button{border:0;background:none;color:#be123c;font-weight:800;cursor:pointer}
+.xdel{border:0;background:#ffe4e6;color:#be123c;font-weight:800;font-size:12px;padding:5px 10px;border-radius:10px;cursor:pointer;margin-left:6px;font-family:inherit}.xdel:disabled{opacity:.5;cursor:not-allowed}
 #cetak{display:none;font-family:Helvetica,Arial,sans-serif;font-size:11px;color:#333}
 #cetak table{width:100%;border-collapse:collapse;margin-top:6px}#cetak th{background:#f97316;color:#fff;padding:6px;border:1px solid #ea580c}
 #cetak td{padding:5px;border:1px solid #d1d5db;text-align:center}#cetak .l{text-align:left}#cetak h3{margin:14px 0 2px;color:#9a3412}
@@ -354,7 +355,7 @@ function kartu(judul, arr, css) {
     const f = i.foto && (i.foto === 'inline' || /^https:\/\/firebasestorage\.googleapis\.com\//.test(i.foto))
       ? `<a href="#" data-foto="${esc(i.foto)}" data-k="${esc(i.tgl + '/' + i.key)}">📷 Foto</a>` : 'Tanpa foto';
     const peta = /^-?[\d.]+,-?[\d.]+$/.test(i.gps) ? `<a href="https://maps.google.com/?q=${encodeURIComponent(i.gps)}" target="_blank" rel="noopener">📍 Peta</a> · ` : '';
-    return `<div class="it"><b>${esc(i.nama)}</b> <span class="tag">${esc(i.kelas)}</span><br>🏢 ${esc(i.instansi)}<br>🕒 ${esc(jam(new Date(i.ts)))}${i.tag||''}<br>${peta}${f}</div>`;
+    return `<div class="it"><b>${esc(i.nama)}</b> <span class="tag">${esc(i.kelas)}</span><br>🏢 ${esc(i.instansi)}<br>🕒 ${esc(jam(new Date(i.ts)))}${i.tag||''}<br>${peta}${f} <button type="button" class="xdel" data-hapus="${esc(i.tgl + '/' + i.key)}" data-info="${esc(i.nama + ' — ' + i.status + ' pukul ' + jam(new Date(i.ts)) + ' WIB')}">🗑️ Hapus</button></div>`;
   }).join('') + '</div>';
 }
 const rentangAktif = () => rentang(S.per, S.per === 'm' ? $('bln').value : $('tgl').value);
@@ -493,6 +494,17 @@ function cetak(L, baris, periode, nama, W, a, b) {
   setTimeout(() => { window.print(); document.title = t; }, 100);
 }
 
+async function hapusAbsen(k, ket, btn) {
+  if (!S.viewId || !/^\d{4}-\d\d-\d\d\/[0-9A-Za-z]+_(MASUK|PULANG|IZIN|SAKIT)$/.test(k)) return;
+  const nisn = k.split('/')[1].split('_')[0];
+  if (!(S.cache[S.viewId] || {})[nisn]) return toast('Murid ini bukan binaan Anda.', 'err');
+  if (!confirm(`Hapus absen ini?\n\n${ket}\nTanggal: ${fmtTgl(k.split('/')[0])}\n\nFoto dan lokasinya ikut terhapus. Tindakan ini tidak bisa dibatalkan.`)) return;
+  if (btn) btn.disabled = true;
+  try {
+    await update(ref(db), { ['absensi/' + k]: null, ['foto/' + k]: null });
+    toast('Absen berhasil dihapus.', 'ok'); if (!unsub) muatRekap();
+  } catch (e) { toast(pesanError(e), 'err'); if (btn) btn.disabled = false; }
+}
 async function lihatFoto(f, k) {
   try {
     const src = f === 'inline' ? (await get(ref(db, 'foto/' + k))).val() : f;
@@ -712,20 +724,20 @@ function resetSiswa() { S.siswa = null; S.foto = ''; $('nisn').value = ''; stopC
 
 async function kirim() {
   $('kirim').disabled = true; $('loader').hidden = false;
-  const s = S.siswa, status = $('status').value, d = now(), tgl = tglISO(d), key = `${s.nisn}_${KODE[status]}`, rr = ref(db, `absensi/${tgl}/${key}`);
+  const s = S.siswa, status = $('status').value, d = now(), tgl = tglISO(d), key = `${s.nisn}_${KODE[status]}`;
   try {
     if (status === 'Masuk Kerja' && menitWIB(d.getTime()) > tutup(stS(s))) { const m = `Absen masuk sudah ditutup pukul ${jamStr(tutup(stS(s)))} WIB, status hari ini Alpa. Harap untuk menghubungi guru pembimbing.`; info('⚫ ' + esc(m), 'err'); throw new Error(m); }
-    try {
-      await set(rr, { nisn: s.nisn, nama: s.nama, kelas: s.kelas, instansi: s.instansi, pembimbing: s.pembimbing, status, gps: S.gps, ts: serverTimestamp() });
-    } catch (e) { throw new Error(`${s.nama} sudah tercatat "${status}" hari ini, atau data tidak valid.`); }
-    let ket = ''; const q = stS(s), sel = menitWIB(d.getTime()) - batas(q), pc = jamMnt(q.pulang) - menitWIB(d.getTime()), tl = status === 'Masuk Kerja' ? (sel > 0 ? ` Terlambat ${sel} menit.` : ' Tepat waktu ✅') : status === 'Pulang Kerja' ? (pc > 0 ? ` Pulang lebih cepat ${pc} menit.` : -pc <= q.tol ? ' Pulang tepat waktu ✅' : ` Pulang terlambat ${-pc} menit.`) : '';
-    try {
-      const fr = sref(storage, `absen/${tgl}/${key}.jpg`);
-      await uploadString(fr, S.foto, 'data_url'); await set(ref(db, `absensi/${tgl}/${key}/foto`), await getDownloadURL(fr));
-    } catch (e1) {
-      try { await set(ref(db, `foto/${tgl}/${key}`), S.foto); await set(ref(db, `absensi/${tgl}/${key}/foto`), 'inline'); }
-      catch (e2) { ket = ' (foto gagal tersimpan)'; }
+    const pth = `${tgl}/${key}`;
+    if ((await get(ref(db, 'absensi/' + pth))).exists()) throw new Error(`${s.nama} sudah tercatat "${status}" hari ini.`);
+    const rec = { nisn: s.nisn, nama: s.nama, kelas: s.kelas || '', instansi: s.instansi || '', pembimbing: s.pembimbing || '', status, gps: S.gps, ts: serverTimestamp() };
+    let ket = '';
+    try { await update(ref(db), { ['absensi/' + pth]: { ...rec, foto: 'inline' }, ['foto/' + pth]: S.foto }); }
+    catch (e1) {
+      console.error('Simpan absen + foto gagal:', e1);
+      try { await set(ref(db, 'absensi/' + pth), rec); ket = ` (FOTO GAGAL TERSIMPAN: ${pesanError(e1)})`; }
+      catch (e2) { throw e1; }
     }
+    const q = stS(s), sel = menitWIB(d.getTime()) - batas(q), pc = jamMnt(q.pulang) - menitWIB(d.getTime()), tl = status === 'Masuk Kerja' ? (sel > 0 ? ` Terlambat ${sel} menit.` : ' Tepat waktu ✅') : status === 'Pulang Kerja' ? (pc > 0 ? ` Pulang lebih cepat ${pc} menit.` : -pc <= q.tol ? ' Pulang tepat waktu ✅' : ` Pulang terlambat ${-pc} menit.`) : '';
     toast(`Absen ${status} atas nama ${s.nama} berhasil dicatat.${tl}${ket}`, ket ? '' : 'ok'); resetSiswa(); show('menu');
   } catch (e) { toast(pesanError(e), 'err'); } finally { $('loader').hidden = true; siap(); }
 }
@@ -737,7 +749,7 @@ $('btn-csv').onclick = () => unduh('csv'); $('btn-pdf').onclick = () => unduh('p
 $('seg').addEventListener('click', e => { const b = e.target.closest('[data-per]'); if (!b) return; S.per = b.dataset.per;
   [...$('seg').children].forEach(x => x.classList.toggle('on', x === b)); $('tgl').hidden = S.per === 'm'; $('bln').hidden = S.per !== 'm'; $('wk-nav').hidden = S.per !== 'w'; muatRekap(); });
 $('tgl').onchange = $('bln').onchange = muatRekap;
-$('rekap').addEventListener('click', e => { const a = e.target.closest('[data-foto]'); if (a) { e.preventDefault(); lihatFoto(a.dataset.foto, a.dataset.k); return; } const r = e.target.closest('tr[data-n]'); if (r) detail(r.dataset.n); });
+$('rekap').addEventListener('click', e => { const x = e.target.closest('[data-hapus]'); if (x) { hapusAbsen(x.dataset.hapus, x.dataset.info, x); return; } const a = e.target.closest('[data-foto]'); if (a) { e.preventDefault(); lihatFoto(a.dataset.foto, a.dataset.k); return; } const r = e.target.closest('tr[data-n]'); if (r) detail(r.dataset.n); });
 $('dlg-x').onclick = () => $('dlg').close(); $('dlg2-x').onclick = () => $('dlg2').close();
 $('btn-alogin').onclick = aLogin; $('a-pass').addEventListener('keydown', e => { if (e.key === 'Enter') aLogin(); });
 $('btn-akeluar').onclick = async () => { if (!UJICOBA) await signOut(auth); show('menu'); };
