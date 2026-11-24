@@ -2,7 +2,8 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="format-detection" content="telephone=no">
 <meta name="theme-color" content="#ea580c">
 <title>Portal PKL MPLB Ceria</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,7 +13,7 @@
 :root{--p:#ea580c;--pl:#fb923c;--pd:#c2410c;--line:#fed7aa;--bg:#fef3c7;--tx:#1f2937;--mu:#64748b}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);margin:0;padding:20px 16px;color:var(--tx);min-height:100vh;overflow-x:hidden}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);margin:0;padding:max(20px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(20px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));color:var(--tx);min-height:100vh;min-height:100dvh;overflow-x:hidden}
 .wave{position:absolute;inset:0 0 auto 0;height:280px;background:linear-gradient(135deg,var(--pl),var(--p));border-radius:0 0 50% 50%/0 0 20% 30%;z-index:-1;box-shadow:0 10px 30px rgba(234,88,12,.2)}
 .wrap{max-width:480px;margin:0 auto}
 .card{background:#fff;padding:32px 24px;border-radius:32px;box-shadow:0 20px 40px -10px rgba(0,0,0,.08),0 0 0 1px rgba(253,186,116,.3);margin-bottom:20px}
@@ -29,7 +30,7 @@ h1{font-size:24px}h2{font-size:20px}
 .btn.sm{padding:11px 14px;font-size:13px;margin:0}
 .btn:disabled{background:#cbd5e1!important;color:#94a3b8!important;box-shadow:none!important;cursor:not-allowed;transform:none}
 .btn:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid rgba(251,146,60,.5);outline-offset:2px}
-input,select{width:100%;padding:13px 16px;margin:6px 0;border:2px solid var(--line);border-radius:18px;font-weight:600;font-size:15px;font-family:inherit;color:var(--tx);background:#fffaf5}
+input,select{width:100%;padding:13px 16px;margin:6px 0;border:2px solid var(--line);border-radius:18px;font-weight:600;font-size:16px;font-family:inherit;color:var(--tx);background:#fffaf5}
 label{display:block;font-size:12px;font-weight:800;color:var(--p);margin-top:8px}
 .sec{font-size:12px;font-weight:800;letter-spacing:.5px;color:var(--p);margin:22px 0 8px;text-transform:uppercase;border-bottom:2px dashed var(--line);padding-bottom:6px}
 .row{display:flex;gap:8px}.row>*{flex:1}
@@ -49,11 +50,11 @@ label{display:block;font-size:12px;font-weight:800;color:var(--p);margin-top:8px
 #preview{max-width:100%;max-height:220px;border-radius:16px;border:4px solid #fff;box-shadow:0 8px 16px rgba(0,0,0,.1)}
 .loader{color:var(--p);text-align:center;margin:14px 0;font-weight:800}
 .hint{font-size:12px;color:var(--mu);text-align:center;margin:6px 0 0}
-#toast{position:fixed;left:50%;top:16px;transform:translate(-50%,-150%);max-width:92vw;padding:12px 18px;border-radius:16px;font-weight:700;font-size:14px;background:#1f2937;color:#fff;z-index:99;transition:transform .25s;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+#toast{position:fixed;left:50%;top:max(16px,env(safe-area-inset-top));transform:translate(-50%,-150%);max-width:92vw;padding:12px 18px;border-radius:16px;font-weight:700;font-size:14px;background:#1f2937;color:#fff;z-index:99;transition:transform .25s;box-shadow:0 10px 30px rgba(0,0,0,.25)}
 #toast.show{transform:translate(-50%,0)}#toast.ok{background:#15803d}#toast.err{background:#b91c1c}
 .foot{text-align:center;margin-top:24px;padding-top:16px;border-top:1px dashed var(--line);font-size:11px;color:#9a3412;line-height:1.6}.foot b{color:var(--p)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
-textarea{width:100%;padding:13px 16px;margin:6px 0;border:2px solid var(--line);border-radius:18px;font-weight:600;font-size:13px;font-family:inherit;background:#fffaf5;resize:vertical}
+textarea{width:100%;padding:13px 16px;margin:6px 0;border:2px solid var(--line);border-radius:18px;font-weight:600;font-size:16px;font-family:inherit;background:#fffaf5;resize:vertical}
 dialog{border:0;border-radius:20px;padding:14px;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,.4)}dialog::backdrop{background:rgba(0,0,0,.55)}
 dialog img{max-width:100%;max-height:70vh;border-radius:12px;display:block;margin:0 auto}
 .lib{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;margin-top:8px;background:#fff7ed;border:1px solid var(--line);border-radius:12px;font-size:12px;font-weight:700}
@@ -67,6 +68,16 @@ dialog img{max-width:100%;max-height:70vh;border-radius:12px;display:block;margi
 .wrap.wide{max-width:960px}.seg{display:flex;gap:6px;margin:10px 0}.seg button{flex:1;padding:10px;border-radius:14px;border:1px solid var(--line);background:#fff7ed;color:var(--p);font-weight:800;font-size:13px;font-family:inherit;cursor:pointer}.seg .on{background:var(--p);color:#fff}
 .tbl{overflow-x:auto}.tbl table{width:100%;border-collapse:collapse;font-size:13px}.tbl th{background:#fff7ed;color:var(--p);padding:8px;font-size:11px}.tbl td{padding:6px;border-bottom:1px solid var(--line);text-align:center}.tbl td.l{text-align:left}.tbl tr[data-n]{cursor:pointer}.tbl input,.tbl select{margin:0;padding:8px;font-size:13px;min-width:90px}
 .clock{font-variant-numeric:tabular-nums;color:#9a3412;font-weight:700}details.rc summary{font-weight:800;color:var(--p);cursor:pointer}dialog{max-height:80vh;overflow:auto}
+/* ---- optimasi iOS / Safari ---- */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+*{-webkit-tap-highlight-color:transparent}
+button,select,input,label,summary{touch-action:manipulation}
+input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea{-webkit-appearance:none;appearance:none;border-radius:18px}
+select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%23ea580c' stroke-width='2' stroke-linecap='round'/></svg>");background-repeat:no-repeat;background-position:right 16px center;background-size:12px;padding-right:40px}
+input[type=date],input[type=month],input[type=time]{min-height:50px;display:block;text-align:left}
+input::-webkit-date-and-time-value{text-align:left;min-height:1.3em}
+#rekap,.tbl,dialog{-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+#gps-help{line-height:1.7}#gps-help small{opacity:.85}
 </style>
 </head>
 <body>
@@ -185,11 +196,12 @@ dialog img{max-width:100%;max-height:70vh;border-radius:12px;display:block;margi
     <label for="status">STATUS KEHADIRAN</label>
     <select id="status"><option>Masuk Kerja</option><option>Pulang Kerja</option><option>Izin</option><option>Sakit</option></select>
     <label>FOTO SELFIE (LANGSUNG DARI KAMERA, TIDAK BISA DARI GALERI)</label>
-    <div id="cam-box" hidden style="text-align:center;margin-top:6px"><video id="cam" autoplay playsinline muted style="width:100%;max-height:320px;border-radius:16px;background:#000;transform:scaleX(-1)"></video></div>
+    <div id="cam-box" hidden style="text-align:center;margin-top:6px"><video id="cam" autoplay playsinline webkit-playsinline muted disablepictureinpicture style="width:100%;max-height:320px;border-radius:16px;background:#000;transform:scaleX(-1)"></video></div>
     <div class="row" style="margin-top:6px"><button type="button" class="btn so sm" id="btn-cam">📷 Buka Kamera</button><button type="button" class="btn or sm" id="btn-snap" hidden>🔘 Ambil Foto</button></div>
     <div id="preview-box" hidden style="text-align:center;margin-top:10px"><img id="preview" alt="Pratinjau foto"></div>
     <div class="sec">3. Lokasi</div>
     <p id="lokasi" class="hint" style="color:var(--p);font-weight:700;text-align:left;margin:4px 0">Menunggu koordinat GPS…</p>
+    <div id="gps-help" class="box warn" hidden></div>
     <button type="button" class="btn so sm" id="btn-gps" hidden style="margin-top:6px">🔁 Coba Lagi GPS</button>
     <div id="map" hidden></div>
     <button type="button" class="btn or" id="kirim" disabled style="margin-top:18px">Kirim Absensi Sekarang</button>
@@ -316,7 +328,7 @@ function show(id) {
   if (id === 'alogin' && (UJICOBA || (auth.currentUser && !auth.currentUser.isAnonymous))) { bukaAdmin().catch(e => toast(pesanError(e), 'err')); return; }
   PAGES.forEach(p => $(p).hidden = p !== id);
   document.querySelector('.wrap').classList.toggle('wide', id === 'dasbor' || id === 'admin'); window.scrollTo(0, 0);
-  if (id === 'siswa') initGPS(); if (id === 'login') muatGuru(); if (id !== 'dasbor') stopLive(); if (id !== 'siswa') { stopCam(); stopScan(); }
+  if (id === 'siswa') initGPS(); if (id === 'login') muatGuru(); if (id !== 'dasbor') stopLive(); if (id !== 'siswa') { stopCam(); stopScan(); stopGPS(); }
 }
 function bukaDasbor() {
   $('guru-aktif').textContent = '👨‍🏫 ' + S.pemb[S.viewId].nama;
@@ -667,24 +679,74 @@ async function pindai(file) {
     $('nisn').value = (await S.qr.scanFile(file, false)).trim(); await cari();
   } catch (e) { info('❌ Barcode tidak terbaca. Pastikan foto terang dan jelas.', 'err'); }
 }
-function initGPS() {
-  const t = $('lokasi'), re = $('btn-gps'); S.gps = ''; re.hidden = true; siap();
-  if (!navigator.geolocation) { t.textContent = '❌ Browser tidak mendukung GPS.'; return; }
-  t.textContent = 'Mengunci koordinat GPS… ⏳';
-  navigator.geolocation.getCurrentPosition(p => {
-    const { latitude: la, longitude: lo, accuracy: ac } = p.coords;
-    S.gps = la.toFixed(6) + ',' + lo.toFixed(6);
-    t.textContent = `📍 GPS terkunci (akurasi ±${Math.round(ac)} m)` + (ac > 100 ? ' — kurang akurat, coba di area terbuka.' : '');
-    siap(); peta(la, lo);
-  }, () => { t.textContent = '❌ GPS gagal diakses. Izinkan lokasi di browser.'; re.hidden = false; },
-  { enableHighAccuracy: true, timeout: 20000, maximumAge: 30000 });
+/* ---------- GPS (dioptimalkan untuk iOS Safari) ---------- */
+const UA = navigator.userAgent;
+const IOS = /iP(hone|ad|od)/.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const INAPP = /FBAN|FBAV|Instagram|Line\/|WhatsApp|TikTok|MicroMessenger|Snapchat|Twitter|\bwv\b/i.test(UA) || (IOS && !/Safari/.test(UA));
+const GPS = { tok: 0, watch: 0, tStop: 0, tKill: 0, best: null, err: null, busy: false };
+const HELP_IOS = '<b>Aktifkan lokasi di iPhone/iPad:</b><br>1. Buka <b>Pengaturan › Privasi &amp; Keamanan › Layanan Lokasi</b> → nyalakan.<br>2. Gulir ke <b>Situs Web Safari</b> → pilih <b>Saat Menggunakan App</b> dan nyalakan <b>Lokasi Tepat</b>.<br>3. Kembali ke halaman ini — GPS dicoba otomatis. Jika belum, tekan “Coba Lagi GPS”.<br><b>Cara cepat:</b> ketuk ikon <b>aA</b> di bilah alamat Safari › <b>Pengaturan Situs Web</b> › Lokasi › <b>Izinkan</b>, lalu muat ulang.<br><small>Chrome iOS: Pengaturan › Chrome › Lokasi.</small>';
+const HELP_IOS2 = 'Pastikan <b>Layanan Lokasi</b> menyala (Pengaturan › Privasi &amp; Keamanan), <b>Mode Pesawat</b> mati, dan Wi‑Fi/sinyal aktif. Lalu tekan “Coba Lagi GPS”.';
+const HELP_GEN = 'Ketuk ikon gembok di bilah alamat › <b>Izin/Pengaturan situs</b> › <b>Lokasi</b> › <b>Izinkan</b>, lalu tekan “Coba Lagi GPS”.';
+const HELP_GEN2 = 'Nyalakan GPS/Lokasi perangkat dan pastikan sinyal/Wi‑Fi aktif, lalu tekan “Coba Lagi GPS”.';
+const HELP_TIMEOUT = 'Sinyal GPS lemah. Pindah ke dekat jendela atau area terbuka, lalu tekan “Coba Lagi GPS”.';
+const HELP_PRECISE = '<b>Lokasi masih perkiraan.</b> Buka <b>Pengaturan › Privasi &amp; Keamanan › Layanan Lokasi › Situs Web Safari</b> lalu nyalakan <b>Lokasi Tepat</b>, kemudian tekan “Coba Lagi GPS”.';
+const HELP_INAPP = '⚠️ Anda membuka halaman dari dalam aplikasi (WhatsApp/Instagram/dll) yang sering memblokir GPS &amp; kamera. Salin link ini dan buka di <b>Safari</b> atau <b>Chrome</b>.';
+const bantuan = h => { const b = $('gps-help'); b.hidden = !h; b.innerHTML = h || ''; };
+function stopGPS() {
+  GPS.tok++; GPS.busy = false; clearTimeout(GPS.tStop); clearTimeout(GPS.tKill);
+  if (GPS.watch && navigator.geolocation) navigator.geolocation.clearWatch(GPS.watch); GPS.watch = 0;
 }
+function tampilFix(ac, final) {
+  const t = $('lokasi'), a = Math.round(ac);
+  if (ac > 1000) { t.textContent = `⚠️ Lokasi hanya perkiraan (±${a} m).`; bantuan(IOS ? HELP_PRECISE : HELP_GEN2); return; }
+  t.textContent = `📍 GPS terkunci (akurasi ±${a} m)` + (final ? (ac > 100 ? ' — kurang akurat, coba di area terbuka.' : '') : ' • menyempurnakan… ⏳');
+  bantuan('');
+}
+function selesaiGPS() { const b = GPS.best; stopGPS(); if (b) tampilFix(b.ac, true); }
+function gagalGPS(e) {
+  stopGPS(); const t = $('lokasi'), c = (e && e.code) || 3; $('btn-gps').hidden = false;
+  if (c === 1) { t.textContent = '🔒 Izin lokasi ditolak.'; bantuan(IOS ? HELP_IOS : HELP_GEN); }
+  else if (c === 2) { t.textContent = '📡 Lokasi tidak tersedia.'; bantuan(IOS ? HELP_IOS2 : HELP_GEN2); }
+  else { t.textContent = '⌛ GPS terlalu lama mendapat sinyal.'; bantuan(HELP_TIMEOUT); }
+}
+function initGPS() {
+  stopGPS(); const my = ++GPS.tok; GPS.busy = true;
+  const t = $('lokasi'), re = $('btn-gps'); S.gps = ''; S.gpsAt = 0; GPS.best = null; GPS.err = null; re.hidden = true; siap(); bantuan(INAPP ? HELP_INAPP : '');
+  if (!window.isSecureContext) { GPS.busy = false; t.textContent = '🔒 Halaman harus dibuka lewat HTTPS agar GPS berfungsi.'; re.hidden = false; return; }
+  if (!navigator.geolocation) { GPS.busy = false; t.textContent = '❌ Browser tidak mendukung GPS.'; return; }
+  t.textContent = 'Mengunci koordinat GPS… ⏳ (izinkan lokasi jika diminta)';
+  const fix = p => {
+    if (my !== GPS.tok) return;
+    const { latitude: la, longitude: lo, accuracy: ac } = p.coords;
+    if (GPS.best && ac >= GPS.best.ac) return;
+    const pertama = !GPS.best; GPS.best = { la, lo, ac };
+    S.gps = la.toFixed(6) + ',' + lo.toFixed(6); S.gpsAt = Date.now();
+    tampilFix(ac, false); siap(); peta(la, lo);
+    if (pertama) GPS.tStop = setTimeout(selesaiGPS, 15000);
+    if (ac <= 25) selesaiGPS();
+  };
+  const refine = () => {
+    if (my !== GPS.tok || GPS.watch) return;
+    GPS.watch = navigator.geolocation.watchPosition(fix, e => { if (my !== GPS.tok) return; if (e.code === 1) gagalGPS(e); else GPS.err = e; }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+  };
+  GPS.tKill = setTimeout(() => { if (my !== GPS.tok) return; GPS.best ? selesaiGPS() : gagalGPS(GPS.err); }, 40000);
+  // 1) fix cepat (Wi‑Fi/seluler, timeout panjang agar dialog izin iOS tidak memicu timeout), 2) lalu sempurnakan dengan GPS presisi
+  navigator.geolocation.getCurrentPosition(p => { fix(p); refine(); }, e => { if (my !== GPS.tok) return; if (e.code === 1) return gagalGPS(e); GPS.err = e; refine(); }, { enableHighAccuracy: false, timeout: 38000, maximumAge: 60000 });
+}
+// Segarkan koordinat tepat sebelum kirim agar tidak memakai posisi lama.
+const segarGPS = () => new Promise(ok => {
+  if (!navigator.geolocation) return ok(false);
+  navigator.geolocation.getCurrentPosition(p => { S.gps = p.coords.latitude.toFixed(6) + ',' + p.coords.longitude.toFixed(6); S.gpsAt = Date.now(); ok(true); }, () => ok(false), { enableHighAccuracy: true, timeout: 8000, maximumAge: 15000 });
+});
+if (navigator.permissions && navigator.permissions.query) navigator.permissions.query({ name: 'geolocation' }).then(r => { r.onchange = () => { if (r.state === 'granted' && !$('siswa').hidden && !S.gps && !GPS.busy) initGPS(); }; }).catch(() => {});
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && !$('siswa').hidden && !S.gps && !GPS.busy) initGPS(); }); // kembali dari Pengaturan iOS
+
 async function peta(la, lo) {
   try {
     await sekali('leaflet', () => Promise.all([muat('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css', true), muat('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js')]));
     $('map').hidden = false;
     if (!S.map) {
-      S.map = L.map('map').setView([la, lo], 16);
+      S.map = L.map('map', { dragging: !L.Browser.mobile, tap: false, scrollWheelZoom: false }).setView([la, lo], 16);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(S.map);
       S.marker = L.marker([la, lo]).addTo(S.map);
     } else { S.map.setView([la, lo], 16); S.marker.setLatLng([la, lo]); }
@@ -729,6 +791,10 @@ async function kirim() {
     if (status === 'Masuk Kerja' && menitWIB(d.getTime()) > tutup(stS(s))) { const m = `Absen masuk sudah ditutup pukul ${jamStr(tutup(stS(s)))} WIB, status hari ini Alpa. Harap untuk menghubungi guru pembimbing.`; info('⚫ ' + esc(m), 'err'); throw new Error(m); }
     const pth = `${tgl}/${key}`;
     if ((await get(ref(db, 'absensi/' + pth))).exists()) throw new Error(`${s.nama} sudah tercatat "${status}" hari ini.`);
+    if (Date.now() - (S.gpsAt || 0) > 60000) { // koordinat > 1 menit: segarkan dulu
+      toast('Menyegarkan lokasi… ⏳');
+      if (!(await segarGPS()) && Date.now() - (S.gpsAt || 0) > 600000) throw new Error('Lokasi sudah kedaluwarsa dan GPS gagal diperbarui. Tekan “Coba Lagi GPS” lalu kirim ulang.');
+    }
     const rec = { nisn: s.nisn, nama: s.nama, kelas: s.kelas || '', instansi: s.instansi || '', pembimbing: s.pembimbing || '', status, gps: S.gps, ts: serverTimestamp() };
     let ket = '';
     try { await update(ref(db), { ['absensi/' + pth]: { ...rec, foto: 'inline' }, ['foto/' + pth]: S.foto }); }
