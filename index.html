@@ -57,6 +57,9 @@ label{display:block;font-size:12px;font-weight:800;color:var(--p);margin-top:8px
 textarea{width:100%;padding:13px 16px;margin:6px 0;border:2px solid var(--line);border-radius:18px;font-weight:600;font-size:16px;font-family:inherit;background:#fffaf5;resize:vertical}
 dialog{border:0;border-radius:20px;padding:14px;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,.4)}dialog::backdrop{background:rgba(0,0,0,.55)}
 dialog img{max-width:100%;max-height:70vh;border-radius:12px;display:block;margin:0 auto}
+.abjad{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0}.abjad button{min-width:30px;padding:6px 8px;border:1px solid var(--line);background:#fff7ed;color:var(--p);border-radius:10px;font:800 12px inherit;font-family:inherit;cursor:pointer}.abjad button.on{background:var(--p);color:#fff;border-color:var(--p)}.abjad button:disabled{opacity:.35;cursor:default}
+#dlg3{width:min(440px,92vw)}#dlg3 h3{margin:0 0 4px;font-size:16px;color:var(--pd)}#dlg3 .sub2{font-size:11px;font-weight:800;color:var(--p);margin:14px 0 2px;border-top:1px dashed var(--line);padding-top:10px}
+.aksi{display:flex;gap:6px;justify-content:center}.aksi .btn{width:auto;min-width:0;box-shadow:none}
 .lib{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;margin-top:8px;background:#fff7ed;border:1px solid var(--line);border-radius:12px;font-size:12px;font-weight:700}
 .lib button{border:0;background:none;color:#be123c;font-weight:800;cursor:pointer}
 .xdel{border:0;background:#ffe4e6;color:#be123c;font-weight:800;font-size:12px;padding:5px 10px;border-radius:10px;cursor:pointer;margin-left:6px;font-family:inherit}.xdel:disabled{opacity:.5;cursor:not-allowed}
@@ -186,7 +189,10 @@ input::-webkit-date-and-time-value{text-align:left;min-height:1.3em}
       <label for="m-pb">GURU PEMBIMBING</label><select id="m-pb"></select>
       <button type="button" class="btn or sm" id="btn-murid" style="width:100%;margin-top:10px">Simpan Murid</button>
     </details>
-    <input id="s-cari" type="search" placeholder="Cari nama / NISN…"><div id="s-info" class="hint"></div>
+    <input id="s-cari" type="search" placeholder="Cari nama / NISN…">
+    <div class="row" style="margin-top:6px"><div><label for="s-kelas">FILTER KELAS</label><select id="s-kelas"></select></div><div><label for="s-urut">URUTAN NAMA</label><select id="s-urut"><option value="az">A → Z</option><option value="za">Z → A</option></select></div></div>
+    <label style="margin-top:8px">FILTER ABJAD (HURUF AWAL NAMA)</label><div id="s-abjad" class="abjad"></div>
+    <div id="s-info" class="hint"></div>
     <button type="button" class="btn rd sm" id="btn-hapus-pilih" style="width:100%;margin:6px 0">🗑️ Hapus Terpilih</button>
     <div class="tbl"><table><thead><tr><th><input type="checkbox" id="s-all" aria-label="Pilih semua" style="min-width:0;width:auto"></th><th>Siswa</th><th>Kelas</th><th>Pembimbing</th><th></th></tr></thead><tbody id="s-list"></tbody></table></div>
     <div class="sec">4. Hari Libur</div>
@@ -234,6 +240,19 @@ input::-webkit-date-and-time-value{text-align:left;min-height:1.3em}
 </main>
 
 <dialog id="dlg"><img id="dimg" alt="Foto absensi"><button type="button" class="btn so sm" id="dlg-x" style="margin-top:10px;width:100%">Tutup</button></dialog>
+<dialog id="dlg3">
+  <h3>✏️ Ubah Data Murid</h3><div id="e-judul" class="hint" style="text-align:left;margin:0 0 6px"></div>
+  <label for="e-nisn">NISN</label><input id="e-nisn" type="text" inputmode="numeric" autocomplete="off">
+  <p class="hint" id="e-nisn-w" style="text-align:left;color:#be123c" hidden>⚠️ NISN diubah: riwayat absensi lama tetap tercatat di NISN lama.</p>
+  <label for="e-nama">NAMA LENGKAP</label><input id="e-nama" type="text" autocomplete="off">
+  <label for="e-kelas">KELAS</label><select id="e-kelas"></select>
+  <label for="e-inst">INSTANSI / TEMPAT PKL</label><input id="e-inst" type="text" autocomplete="off">
+  <label for="e-pb">GURU PEMBIMBING</label><select id="e-pb"></select>
+  <div class="sub2">⏰ Batas waktu khusus murid ini (kosongkan = ikut pengaturan pembimbing)</div>
+  <div class="row"><div><label for="e-jam">JAM MASUK</label><input id="e-jam" type="time"></div><div><label for="e-tol">TOLERANSI (MNT)</label><input id="e-tol" type="number" min="0" max="240" inputmode="numeric"></div></div>
+  <div class="row"><div><label for="e-pulang">JAM PULANG</label><input id="e-pulang" type="time"></div><div><label for="e-batas">BATAS ABSEN (MNT)</label><input id="e-batas" type="number" min="1" max="720" inputmode="numeric"></div></div>
+  <div class="row" style="margin-top:12px"><button type="button" class="btn so sm" id="e-batal">Batal</button><button type="button" class="btn or sm" id="e-simpan">💾 Simpan</button></div>
+</dialog>
 <dialog id="dlg2"><div id="d2"></div><button type="button" class="btn so sm" id="dlg2-x" style="margin-top:10px;width:100%">Tutup</button></dialog>
 <div id="cetak"></div>
 
@@ -598,9 +617,55 @@ async function tambahMurid() {
   } catch (e) { toast(pesanError(e), 'err'); } finally { sibuk(b, false); }
 }
 function renderSiswa() {
-  const q = $('s-cari').value.toLowerCase(), L = Object.entries(S.dsiswa).filter(([n, s]) => (n + ' ' + s.nama).toLowerCase().includes(q)).sort((a, b) => a[1].nama.localeCompare(b[1].nama));
-  $('s-info').textContent = `${L.length} dari ${Object.keys(S.dsiswa).length} siswa` + (L.length > 150 ? ' (menampilkan 150, gunakan pencarian)' : '');
-  $('s-list').innerHTML = L.slice(0, 150).map(([n, s]) => `<tr><td><input type="checkbox" data-pilih="${esc(n)}" style="min-width:0;width:auto"></td><td class="l"><input data-ed="nama" data-nis="${esc(n)}" value="${esc(s.nama)}"><span class="tag">${esc(n)}</span></td><td><select data-ed="kelas" data-nis="${esc(n)}">${optK(s.kelas)}</select></td><td><select data-pbs="${esc(n)}">${optPb(s.pembimbing, '(tanpa pembimbing)')}</select></td><td><button type="button" class="btn rd sm" data-hs="${esc(n)}">✕</button></td></tr>`).join('');
+  const q = $('s-cari').value.toLowerCase(), fk = $('s-kelas').value, za = $('s-urut').value === 'za', all = Object.entries(S.dsiswa);
+  // opsi filter kelas (pertahankan pilihan)
+  const kl = [...new Set([...KELAS, ...all.map(([, x]) => x.kelas).filter(Boolean)])];
+  $('s-kelas').innerHTML = `<option value="">Semua kelas</option>` + kl.map(k => `<option${k === fk ? ' selected' : ''}>${esc(k)}</option>`).join('') + `<option value="__none"${fk === '__none' ? ' selected' : ''}>(tanpa kelas)</option>`;
+  const lk = ([n, x]) => !fk || (fk === '__none' ? !x.kelas : x.kelas === fk), lq = ([n, x]) => (n + ' ' + x.nama).toLowerCase().includes(q);
+  const huruf = x => { const c = (x.nama || '').trim().charAt(0).toUpperCase(); return /[A-Z]/.test(c) ? c : '#'; };
+  // tombol abjad: hanya huruf yang punya murid (sesuai filter kelas & pencarian) yang aktif
+  const ada = new Set(all.filter(lk).filter(lq).map(([, x]) => huruf(x)));
+  if (S.fAbj && !ada.has(S.fAbj)) S.fAbj = '';
+  $('s-abjad').innerHTML = `<button type="button" data-abj=""${!S.fAbj ? ' class="on"' : ''}>Semua</button>` + [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ#'].map(c => `<button type="button" data-abj="${c}"${S.fAbj === c ? ' class="on"' : ''}${ada.has(c) ? '' : ' disabled'}>${c}</button>`).join('');
+  const L = all.filter(lk).filter(lq).filter(([, x]) => !S.fAbj || huruf(x) === S.fAbj).sort((a, b) => (za ? -1 : 1) * (a[1].nama || '').localeCompare(b[1].nama || ''));
+  $('s-info').textContent = `${L.length} dari ${all.length} siswa` + (L.length > 150 ? ' (menampilkan 150, gunakan pencarian / filter)' : '');
+  $('s-list').innerHTML = L.slice(0, 150).map(([n, s]) => `<tr><td><input type="checkbox" data-pilih="${esc(n)}" style="min-width:0;width:auto"></td><td class="l"><b>${esc(s.nama)}</b><br><span class="tag">${esc(n)}</span>${s.instansi ? `<div class="hint" style="text-align:left;margin:2px 0 0">${esc(s.instansi)}</div>` : ''}</td><td>${esc(s.kelas || '—')}</td><td>${esc((S.pemb[s.pembimbing] || {}).nama || '—')}</td><td><div class="aksi"><button type="button" class="btn or sm" data-edit="${esc(n)}" aria-label="Ubah data">✏️</button><button type="button" class="btn rd sm" data-hs="${esc(n)}" aria-label="Hapus">✕</button></div></td></tr>`).join('') || '<tr><td colspan="5" class="hint">Tidak ada murid yang cocok.</td></tr>';
+  $('s-all').checked = false;
+}
+function bukaEdit(n) {
+  const s = S.dsiswa[n]; if (!s) return; S.editN = n;
+  $('e-judul').textContent = `${s.nama} · NISN ${n}`; $('e-nisn').value = n; $('e-nisn-w').hidden = true; $('e-nama').value = s.nama || '';
+  $('e-kelas').innerHTML = optK(s.kelas); $('e-inst').value = s.instansi || ''; $('e-pb').innerHTML = optPb(s.pembimbing, '(tanpa pembimbing)');
+  $('e-jam').value = s.jamMasuk || ''; $('e-tol').value = s.toleransi == null ? '' : s.toleransi; $('e-pulang').value = s.jamPulang || ''; $('e-batas').value = s.batasAbsen == null ? '' : s.batasAbsen;
+  $('dlg3').showModal();
+}
+async function simpanEdit() {
+  const lama = S.editN, s = S.dsiswa[lama]; if (!s) return;
+  const n = $('e-nisn').value.trim(), nama = $('e-nama').value.trim().replace(/\s+/g, ' '), kelas = $('e-kelas').value, ins = $('e-inst').value.trim(), pb = $('e-pb').value;
+  const jam = $('e-jam').value, pl = $('e-pulang').value, tv = $('e-tol').value.trim(), bv = $('e-batas').value.trim();
+  if (!/^[0-9A-Za-z]{3,20}$/.test(n)) return toast('NISN harus 3–20 karakter (huruf/angka).', 'err');
+  if (nama.length < 3) return toast('Nama minimal 3 huruf.', 'err');
+  const tol = tv === '' ? null : Math.round(+tv), bts = bv === '' ? null : Math.round(+bv);
+  if (tol !== null && !(tol >= 0 && tol <= 240)) return toast('Toleransi harus 0–240 menit.', 'err');
+  if (bts !== null && !(bts >= 1 && bts <= 720)) return toast('Batas absen harus 1–720 menit.', 'err');
+  if (tol !== null && bts !== null && bts < tol) return toast('Batas absen tidak boleh lebih kecil dari toleransi.', 'err');
+  if (n !== lama && S.dsiswa[n]) return toast(`NISN ${n} sudah dipakai ${S.dsiswa[n].nama}.`, 'err');
+  const o = { ...s, nama, kelas, instansi: ins, pembimbing: pb || null, jamMasuk: jam || null, toleransi: tol, jamPulang: pl || null, batasAbsen: bts };
+  const up = {}, b = 'siswa/' + n + '/';
+  if (n !== lama) {
+    if (!confirm(`NISN diubah dari ${lama} ke ${n}.\nRiwayat absensi lama tetap tercatat di NISN lama. Lanjutkan?`)) return;
+    if ((await get(ref(db, 'siswa/' + n))).exists()) return toast(`NISN ${n} sudah terdaftar.`, 'err');
+    up['siswa/' + lama] = null;
+  }
+  Object.entries({ nama, kelas, instansi: ins, pembimbing: pb || null, jamMasuk: jam || null, toleransi: tol, jamPulang: pl || null, batasAbsen: bts }).forEach(([k, v]) => up[b + k] = v);
+  if (n !== lama) Object.keys(s).forEach(k => { if (!(b + k in up) && s[k] != null) up[b + k] = s[k]; });
+  const btn = $('e-simpan'); sibuk(btn, true);
+  try {
+    await update(ref(db), up);
+    if (n !== lama) delete S.dsiswa[lama];
+    Object.keys(o).forEach(k => { if (o[k] == null) delete o[k]; }); S.dsiswa[n] = o; S.cache = {};
+    $('dlg3').close(); renderPemb(); renderSiswa(); toast(`Data ${nama} berhasil diperbarui.`, 'ok');
+  } catch (e) { toast(pesanError(e), 'err'); } finally { sibuk(btn, false); }
 }
 
 /* ----- import xlsx / gambar (OCR) ----- */
@@ -977,15 +1042,11 @@ $('btn-hapus-pilih').onclick = async () => {
   const up = {}; ids.forEach(n => up['siswa/' + n] = null);
   try { await update(ref(db), up); ids.forEach(n => delete S.dsiswa[n]); S.cache = {}; $('s-all').checked = false; renderPemb(); renderSiswa(); toast(`${ids.length} siswa dihapus.`, 'ok'); } catch (x) { toast(pesanError(x), 'err'); }
 };
-$('s-list').addEventListener('change', async e => {
-  const f = e.target.dataset.ed, n = e.target.dataset.nis; if (!f) return; const v = e.target.value.trim();
-  if (f === 'nama' && v.length < 3) { toast('Nama minimal 3 huruf.', 'err'); renderSiswa(); return; }
-  try { await set(ref(db, `siswa/${n}/${f}`), v); S.dsiswa[n][f] = v; S.cache = {}; toast('Data diperbarui.', 'ok'); } catch (x) { toast(pesanError(x), 'err'); }
-});
-$('s-cari').oninput = renderSiswa;
-$('s-list').addEventListener('change', async e => { const n = e.target.dataset.pbs; if (!n) return;
-  try { await set(ref(db, `siswa/${n}/pembimbing`), e.target.value || null); S.dsiswa[n].pembimbing = e.target.value; S.cache = {}; renderPemb(); toast('Pembimbing diperbarui.', 'ok'); } catch (x) { toast(pesanError(x), 'err'); } });
-$('s-list').addEventListener('click', async e => { const n = e.target.dataset.hs; if (!n || !confirm('Hapus siswa ini?')) return;
+$('s-cari').oninput = renderSiswa; $('s-kelas').onchange = renderSiswa; $('s-urut').onchange = renderSiswa;
+$('s-abjad').addEventListener('click', e => { const t = e.target.closest('[data-abj]'); if (!t || t.disabled) return; S.fAbj = t.dataset.abj; renderSiswa(); });
+$('s-list').addEventListener('click', e => { const t = e.target.closest('[data-edit]'); if (t) bukaEdit(t.dataset.edit); });
+$('e-simpan').onclick = simpanEdit; $('e-batal').onclick = () => $('dlg3').close(); $('e-nisn').oninput = () => { $('e-nisn-w').hidden = $('e-nisn').value.trim() === S.editN; };
+$('s-list').addEventListener('click', async e => { const n = e.target.closest('[data-hs]')?.dataset.hs; if (!n || !confirm('Hapus siswa ini?')) return;
   try { await set(ref(db, 'siswa/' + n), null); delete S.dsiswa[n]; S.cache = {}; renderPemb(); renderSiswa(); } catch (x) { toast(pesanError(x), 'err'); } });
 $('i-file').onchange = e => { bacaFile(e.target.files[0]); e.target.value = ''; };
 $('i-mode').onchange = () => { S.imp = []; renderImp(); };
